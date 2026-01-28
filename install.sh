@@ -4,10 +4,10 @@
 # https://github.com/elmanci2/gix
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/elmanci2/gix/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/elmanci2/gix/refs/heads/master/install.sh | bash
 #
 # Or with a specific version:
-#   curl -fsSL https://raw.githubusercontent.com/elmanci2/gix/main/install.sh | bash -s -- v1.0.0
+#   curl -fsSL https://raw.githubusercontent.com/elmanci2/gix/refs/heads/master/install.sh | bash -s -- v1.0.0
 
 set -e
 
@@ -197,6 +197,10 @@ build_from_source() {
     print_info "Installing via cargo..."
     cargo install --git "https://github.com/${REPO}" --force
 
+    # Update INSTALL_DIR to where cargo actually installs
+    INSTALL_DIR="$HOME/.cargo/bin"
+    INSTALLED_VIA_CARGO=true
+
     print_success "Installed via cargo!"
 }
 
@@ -248,13 +252,17 @@ setup_path() {
 # Verify installation
 verify_installation() {
     echo ""
-    if [ -x "${INSTALL_DIR}/${BINARY_NAME}" ]; then
+    
+    # Check if binary exists in expected location OR if gix command is available
+    if [ -x "${INSTALL_DIR}/${BINARY_NAME}" ] || command -v gix &> /dev/null; then
         print_success "Installation successful!"
         echo ""
         
         # Try to run version command
         if command -v gix &> /dev/null; then
             gix version
+        elif [ -x "${INSTALL_DIR}/${BINARY_NAME}" ]; then
+            "${INSTALL_DIR}/${BINARY_NAME}" version
         else
             print_info "Note: You may need to restart your terminal or run:"
             echo ""
@@ -312,6 +320,9 @@ uninstall() {
 main() {
     print_header
 
+    # Initialize flag
+    INSTALLED_VIA_CARGO=false
+
     # Check for uninstall flag
     if [ "$1" = "--uninstall" ] || [ "$1" = "-u" ]; then
         uninstall
@@ -330,8 +341,10 @@ main() {
     # Download and install
     download_and_install
 
-    # Setup PATH
-    setup_path
+    # Setup PATH (skip if installed via cargo, as cargo manages its own PATH)
+    if [ "$INSTALLED_VIA_CARGO" = false ]; then
+        setup_path
+    fi
 
     # Verify
     verify_installation

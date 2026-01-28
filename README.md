@@ -34,7 +34,7 @@ Cambia entre perfiles de trabajo, personal y open source con diferentes claves S
 ### Opción 1: Script de Instalación (Recomendado)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/elmanci2/gix/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/elmanci2/gix/refs/heads/master/install.sh | bash
 ```
 
 ### Opción 2: Con Cargo
@@ -261,7 +261,7 @@ gix te preguntará qué perfil usar y opcionalmente lo guardará para el reposit
 
 ```bash
 # Con el script
-curl -fsSL https://raw.githubusercontent.com/elmanci2/gix/main/install.sh | bash -s -- --uninstall
+curl -fsSL https://raw.githubusercontent.com/elmanci2/gix/refs/heads/master/install.sh | bash -s -- --uninstall
 
 # Manualmente
 rm ~/.local/bin/gix

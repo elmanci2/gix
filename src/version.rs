@@ -42,7 +42,7 @@ pub fn handle_update(force: bool) -> Result<()> {
                 println!("\nTo update, run one of the following:");
                 println!();
                 println!("   \x1b[1m# Using the install script:\x1b[0m");
-                println!("   curl -fsSL https://raw.githubusercontent.com/elmanci2/gix/main/install.sh | bash");
+                println!("   curl -fsSL https://raw.githubusercontent.com/elmanci2/gix/refs/heads/master/install.sh | bash");
                 println!();
                 println!("   \x1b[1m# Using cargo:\x1b[0m");
                 println!("   cargo install --git {} --force", REPO_URL);
