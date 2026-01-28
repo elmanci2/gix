@@ -260,6 +260,22 @@ verify_installation() {
         
         # Try to run version command
         if command -v gix &> /dev/null; then
+            CURRENT_GIX=$(command -v gix)
+            INSTALLED_GIX="${INSTALL_DIR}/${BINARY_NAME}"
+            
+            # Resolve symlinks if possible (basic check)
+            if [ "$CURRENT_GIX" != "$INSTALLED_GIX" ]; then
+                echo ""
+                print_warning "Different gix binary detected in PATH config:"
+                echo "    Current:   $CURRENT_GIX (Priority)"
+                echo "    Installed: $INSTALLED_GIX"
+                echo ""
+                echo "    To use the new version, you may need to:"
+                echo "    1. Remove the old version: rm $CURRENT_GIX"
+                echo "    2. Or prepend install dir to PATH"
+                echo ""
+            fi
+
             gix version
         elif [ -x "${INSTALL_DIR}/${BINARY_NAME}" ]; then
             "${INSTALL_DIR}/${BINARY_NAME}" version

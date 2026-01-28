@@ -39,14 +39,18 @@ pub fn handle_update(force: bool) -> Result<()> {
                     println!("\n\x1b[1;32m✓ Already on latest version.\x1b[0m (force update requested)");
                 }
 
-                println!("\nTo update, run one of the following:");
-                println!();
-                println!("   \x1b[1m# Using the install script:\x1b[0m");
+                println!("\nTo update manually, run:");
                 println!("   curl -fsSL https://raw.githubusercontent.com/elmanci2/gix/refs/heads/master/install.sh | bash");
                 println!();
-                println!("   \x1b[1m# Using cargo:\x1b[0m");
-                println!("   cargo install --git {} --force", REPO_URL);
-                println!();
+
+                // Ask to update automatically
+                if dialoguer::Confirm::with_theme(&dialoguer::theme::ColorfulTheme::default())
+                    .with_prompt(format!("Do you want to install version {} automatically now?", latest))
+                    .default(true)
+                    .interact()?
+                {
+                    perform_self_update()?;
+                }
             } else {
                 println!("\n\x1b[1;32m✓ You are running the latest version!\x1b[0m");
             }
@@ -58,6 +62,29 @@ pub fn handle_update(force: bool) -> Result<()> {
             );
             println!("\nYou can manually check for updates at: {}/releases", REPO_URL);
         }
+    }
+
+    Ok(())
+}
+
+/// Perform self-update by running the install script
+fn perform_self_update() -> Result<()> {
+    println!("\n\x1b[1;36m⬇️  Downloading and installing update...\x1b[0m");
+
+    let script_url = "https://raw.githubusercontent.com/elmanci2/gix/refs/heads/master/install.sh";
+    
+    // We execute the install script just like the manual command
+    let status = Command::new("bash")
+        .arg("-c")
+        .arg(format!("curl -fsSL {} | bash", script_url))
+        .status()
+        .context("Failed to execute update script")?;
+
+    if status.success() {
+        println!("\n\x1b[1;32m✓ Update completed successfully!\x1b[0m");
+        println!("Please restart your terminal or run 'source ~/.zshrc' (or equivalent) if the command is not found.");
+    } else {
+        anyhow::bail!("Update script failed with exit code: {}", status.code().unwrap_or(1));
     }
 
     Ok(())

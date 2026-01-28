@@ -218,8 +218,11 @@ pub fn handle_git_command(args: Vec<String>) -> Result<()> {
 
     // Interception logic
     let current_profile = detect_profile(&config);
+    let is_clone = args.first().map(|s| s == "clone").unwrap_or(false);
 
     let profile = if let Some(p) = current_profile {
+        // If we are cloning, we might want to confirm if we really want to use the default profile
+        // but for now let's respect the default if it exists.
         println!(
             "\x1b[1;36m🔀 Using profile:\x1b[0m \x1b[1;32m{}\x1b[0m ({})",
             p.profile_name, p.email
@@ -236,13 +239,19 @@ pub fn handle_git_command(args: Vec<String>) -> Result<()> {
         }
         p.clone()
     } else {
-        println!("\x1b[1;33m⚠ No profile detected for this repository.\x1b[0m");
+        if is_clone {
+             println!("\x1b[1;36m⬇️ Cloning repository...\x1b[0m");
+             println!("\x1b[1;33m⚠ No default profile configured.\x1b[0m");
+        } else {
+             println!("\x1b[1;33m⚠ No profile detected for this repository.\x1b[0m");
+        }
         
         let p = select_profile(&config)
             .ok_or_else(|| anyhow::anyhow!("No profile available"))?;
 
-        // Ask to save persistence
-        if is_inside_git_repo() {
+        // Ask to save persistence ONLY if we are inside a repo AND NOT cloning
+        // If we are cloning, we handle persistence AFTER the clone
+        if is_inside_git_repo() && !is_clone {
             let confirm = Confirm::with_theme(&ColorfulTheme::default())
                 .with_prompt("Configure this repository to always use this profile?")
                 .default(true)
@@ -288,6 +297,97 @@ pub fn handle_git_command(args: Vec<String>) -> Result<()> {
 
     if !status.success() {
         std::process::exit(status.code().unwrap_or(1));
+    }
+    
+    // Post-clone configuration
+    if is_clone && status.success() {
+        // Try to detect the directory created by git clone
+        if let Some(dir) = detect_cloned_dir(&args) {
+            println!("\x1b[1;36m⚙️  Configuring new repository...\x1b[0m");
+            match crate::config::save_local_profile_selection_to_dir(&profile.profile_name, dir.clone()) {
+                Ok(_) => {
+                     // Also apply git local config
+                     if let Err(e) = apply_local_config_to_dir(&profile, &dir) {
+                         println!("\x1b[1;33m⚠ Failed to apply local git config: {}\x1b[0m", e);
+                     } else {
+                         println!("\x1b[1;32m✓ Repository '{}' configured with profile '{}'\x1b[0m", dir.display(), profile.profile_name);
+                     }
+                },
+                Err(e) => println!("\x1b[1;33m⚠ Failed to save profile config: {}\x1b[0m", e),
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Detect directory created by git clone
+fn detect_cloned_dir(args: &[String]) -> Option<PathBuf> {
+    // Determine the directory name
+    // git clone [options] <repository> [<directory>]
+    
+    // 1. Check if the last arg is a directory (not strictly reliable if flags follow, but standard practice)
+    if let Some(last) = args.last() {
+        if !last.starts_with('-') && !last.starts_with("http") && !last.starts_with("git@") && !last.ends_with(".git") {
+            // Likely a directory argument
+            let path = PathBuf::from(last);
+            if path.exists() && path.is_dir() {
+                return Some(path);
+            }
+        }
+    }
+    
+    // 2. Try to derive from repository URL
+    // Find the arg that looks like a repo URL
+    for arg in args.iter().rev() {
+        if arg.ends_with(".git") || arg.starts_with("git@") || arg.starts_with("http") {
+             // Extract name from URL
+             // e.g. https://github.com/user/repo.git -> repo
+             let name = arg.split('/').last()?
+                .trim_end_matches(".git");
+             
+             let path = PathBuf::from(name);
+             if path.exists() && path.is_dir() {
+                 return Some(path);
+             }
+        }
+    }
+    
+    None
+}
+
+/// Apply profile configuration to a specific directory
+fn apply_local_config_to_dir(profile: &Profile, dir: &PathBuf) -> Result<()> {
+    // Configure git user settings
+    Command::new("git")
+        .current_dir(dir)
+        .args(["config", "--local", "user.name", &profile.name])
+        .output()
+        .context("Failed to set user.name")?;
+
+    Command::new("git")
+        .current_dir(dir)
+        .args(["config", "--local", "user.email", &profile.email])
+        .output()
+        .context("Failed to set user.email")?;
+
+    // Configure authentication
+    match &profile.auth {
+        AuthMethod::SSH { key_path } => {
+            let ssh_command = format!("ssh -i {} -o IdentitiesOnly=yes", key_path);
+            Command::new("git")
+                .current_dir(dir)
+                .args(["config", "--local", "core.sshCommand", &ssh_command])
+                .output()
+                .context("Failed to set core.sshCommand")?;
+        }
+        AuthMethod::Token { .. } => {
+             Command::new("git")
+                .current_dir(dir)
+                .args(["config", "--local", "--unset", "core.sshCommand"])
+                .output()
+                .ok(); 
+        }
     }
 
     Ok(())

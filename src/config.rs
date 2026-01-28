@@ -105,7 +105,12 @@ pub fn load_local_config() -> Option<LocalConfig> {
 
 /// Save local repository configuration
 pub fn save_local_profile_selection(profile_name: &str) -> Result<()> {
-    let path = get_local_config_path();
+    save_local_profile_selection_to_dir(profile_name, std::env::current_dir()?)
+}
+
+/// Save local repository configuration to a specific directory
+pub fn save_local_profile_selection_to_dir(profile_name: &str, dir: PathBuf) -> Result<()> {
+    let path = dir.join(".gix").join("config.json");
     
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
