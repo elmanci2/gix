@@ -21,9 +21,34 @@ NC='\033[0m' # No Color
 BOLD='\033[1m'
 
 # Configuration
+# Configuration
 REPO="elmanci2/gix"
 BINARY_NAME="gix"
-INSTALL_DIR="${GIX_INSTALL_DIR:-$HOME/.local/bin}"
+
+# default install dir
+DEFAULT_INSTALL_DIR="$HOME/.local/bin"
+
+# If gix is already installed, try to use its directory to upgrade in-place
+if command -v gix &> /dev/null; then
+    EXISTING_GIX=$(command -v gix)
+    # Check if it's a real file (not alias/function)
+    if [ -f "$EXISTING_GIX" ]; then
+        INSTALL_DIR=$(dirname "$EXISTING_GIX")
+        # Check if we have write permissions
+        if [ ! -w "$INSTALL_DIR" ]; then
+            INSTALL_DIR="$DEFAULT_INSTALL_DIR"
+        fi
+    else
+        INSTALL_DIR="$DEFAULT_INSTALL_DIR"
+    fi
+else
+    INSTALL_DIR="$DEFAULT_INSTALL_DIR"
+fi
+
+# Allow override via env var
+if [ -n "$GIX_INSTALL_DIR" ]; then
+    INSTALL_DIR="$GIX_INSTALL_DIR"
+fi
 
 # Print colored message
 print_info() {
