@@ -1,0 +1,32 @@
+# Build artifacts
+/target/
+debug/
+release/
+
+# Cargo lock is included for binaries
+# Cargo.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local config files (not the project ones)
+*.local.json
+
+# Test files
+test_*.sh
+!install.sh
+
+# Temporary files
+*.tmp
+*.temp
+
+# Log files
+*.log
