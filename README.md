@@ -112,6 +112,7 @@ gix interceptará estos comandos y aplicará el perfil correcto automáticamente
 |---------|-------------|
 | `gix use` | Seleccionar perfil para el repositorio actual |
 | `gix use <nombre>` | Usar un perfil específico |
+| `gix set` | Establecer perfil global por defecto |
 | `gix status` | Ver el perfil activo en el repositorio |
 
 ### Comandos Git

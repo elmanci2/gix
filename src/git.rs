@@ -37,7 +37,14 @@ pub fn detect_profile(config: &Config) -> Option<&Profile> {
         }
     }
 
-    // 2. Fallback to git config
+    // 2. Check global default profile
+    if let Some(default_name) = &config.default_profile {
+        if let Some(p) = config.profiles.iter().find(|p| &p.profile_name == default_name) {
+            return Some(p);
+        }
+    }
+
+    // 3. Fallback to git config
     if !is_inside_git_repo() {
         return None;
     }

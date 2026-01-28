@@ -13,6 +13,7 @@ pub struct Config {
     pub profiles: Vec<Profile>,
     #[serde(default = "default_intercepted_commands")]
     pub intercepted_commands: Vec<String>,
+    pub default_profile: Option<String>,
 }
 
 /// Default commands to intercept
@@ -58,6 +59,7 @@ pub fn load_config() -> Result<Config> {
         Ok(Config {
             profiles: vec![],
             intercepted_commands: default_intercepted_commands(),
+            default_profile: None,
         })
     }
 }

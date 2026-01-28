@@ -28,6 +28,7 @@ fn main() -> Result<()> {
 
     match cli.command {
         Some(Commands::Profile { action }) => handle_profile_command(action),
+        Some(Commands::Set { name }) => profile::handle_set_command(name),
         Some(Commands::Commands) => handle_commands_config(),
         Some(Commands::Use { name }) => handle_use_command(name),
         Some(Commands::Status) => handle_status_command(),

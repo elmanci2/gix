@@ -335,6 +335,65 @@ pub fn handle_profile_command(action: crate::cli::ProfileAction) -> Result<()> {
     Ok(())
 }
 
+/// Handle the 'gix set' command to configure global default profile
+pub fn handle_set_command(name: Option<String>) -> Result<()> {
+    let mut config = load_config()?;
+
+    if config.profiles.is_empty() {
+        println!("\x1b[1;33m⚠ No profiles configured. Run 'gix profile add' first.\x1b[0m");
+        return Ok(());
+    }
+
+    if let Some(n) = name {
+        // Find profile by name
+        if !config.profiles.iter().any(|p| p.profile_name == n) {
+            anyhow::bail!("Profile '{}' not found", n);
+        }
+        
+        config.default_profile = Some(n.clone());
+        save_config(&config)?;
+        println!("\x1b[1;32m✓ Global default profile set to: {}\x1b[0m", n);
+    } else {
+        // Interactive selection
+        let mut selections: Vec<String> = config.profiles.iter()
+            .map(|p| format!("{} ({} <{}>)", p.profile_name, p.name, p.email))
+            .collect();
+        
+        // Add option to unset default
+        selections.push("🚫 No default (Clear)".to_string());
+        
+        // Determine current default index
+        let default_idx = if let Some(def) = &config.default_profile {
+            config.profiles.iter().position(|p| &p.profile_name == def).unwrap_or(0)
+        } else {
+            0
+        };
+
+        println!("\x1b[1;36m🌍 Select Global Default Profile\x1b[0m\n");
+        println!("This profile will be used for repositories that don't have a specific gix profile configured.\n");
+
+        let selection = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("Select default profile")
+            .default(default_idx)
+            .items(&selections)
+            .interact()?;
+
+        if selection == selections.len() - 1 {
+            // "No default" selected
+            config.default_profile = None;
+            save_config(&config)?;
+            println!("\x1b[1;32m✓ Global default profile cleared.\x1b[0m");
+        } else {
+            let profile = &config.profiles[selection];
+            config.default_profile = Some(profile.profile_name.clone());
+            save_config(&config)?;
+            println!("\x1b[1;32m✓ Global default profile set to: {}\x1b[0m", profile.profile_name);
+        }
+    }
+
+    Ok(())
+}
+
 /// Create SSH authentication configuration
 fn create_ssh_auth(email: &str) -> Result<AuthMethod> {
     let mut keys = list_ssh_keys();

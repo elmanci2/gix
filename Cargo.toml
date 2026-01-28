@@ -1,6 +1,6 @@
 [package]
 name = "gix"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2021"
 description = "A powerful Git profile manager for switching between SSH keys and user configurations"
 repository = "https://github.com/elmanci2/gix"

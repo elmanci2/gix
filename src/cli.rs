@@ -42,6 +42,11 @@ pub enum Commands {
         /// Name of the profile to use
         name: Option<String>,
     },
+    /// Set a global default profile
+    Set {
+        /// Name of the profile to set as default
+        name: Option<String>,
+    },
     /// Show current profile status
     Status,
     /// Show version information
